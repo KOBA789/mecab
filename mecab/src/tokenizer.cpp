@@ -301,15 +301,28 @@ N *Tokenizer<N, P>::lookup(const char *begin, const char *end,
     return result_node;
   }
 
-  const char *begin3 = begin2 + mblen;
+  const char *begin3 = begin2;
   const char *group_begin3 = 0;
 
-  if (begin3 > end) {
+  if (begin3 >= end) {
     ADDUNKNWON;
-    if (result_node) {
-      return result_node;
+    if (!result_node) {
+      N *new_node = allocator->newNode();
+      new_node->char_type = cinfo.default_type;
+      new_node->surface = begin2;
+      new_node->length = begin3 - begin2;
+      new_node->rlength = begin3 - begin;
+      new_node->stat = MECAB_UNK_NODE;
+      new_node->bnext = result_node;
+      new_node->feature =
+          lattice->feature_constraint(begin - lattice->sentence());
+      CHECK_DIE(new_node->feature);
+      result_node = new_node;
     }
+    return result_node;
   }
+
+  begin3 += mblen;
 
   if (cinfo.group) {
     const char *tmp = begin3;
